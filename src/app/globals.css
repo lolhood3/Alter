@@ -1,0 +1,270 @@
+@import "tailwindcss";
+
+/* Registered so the whole interface can cross-fade between mode palettes. */
+@property --alt-accent {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #e0566a;
+}
+@property --alt-accent2 {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #a784e8;
+}
+@property --alt-bg0 {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #0b0509;
+}
+@property --alt-glow {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #c4455c;
+}
+
+@theme inline {
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-cormorant), "Cormorant Garamond", Georgia, serif;
+  --color-accent: var(--alt-accent);
+  --color-accent2: var(--alt-accent2);
+  --color-ink: #f4eef0;
+}
+
+:root {
+  color-scheme: dark;
+  --alt-accent: #e0566a;
+  --alt-accent2: #a784e8;
+  --alt-bg0: #0b0509;
+  --alt-glow: #c4455c;
+  /* Motion tokens */
+  --m-instant: 80ms;
+  --m-micro: 140ms;
+  --m-snappy: 220ms;
+  --m-standard: 420ms;
+  --m-spatial: 800ms;
+  --m-gentle: 1400ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html,
+body {
+  height: 100%;
+  background: #060307;
+  color: #f4eef0;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow: hidden;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--alt-accent) 45%, transparent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--alt-accent);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+
+.alter-root {
+  transition:
+    --alt-accent var(--m-spatial) var(--ease-soft),
+    --alt-accent2 var(--m-spatial) var(--ease-soft),
+    --alt-bg0 var(--m-spatial) var(--ease-soft),
+    --alt-glow var(--m-spatial) var(--ease-soft);
+}
+
+.font-display {
+  font-family: var(--font-display);
+  font-feature-settings: "liga", "kern";
+}
+
+.eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(244, 238, 240, 0.5);
+  font-weight: 500;
+}
+
+/* Translucent organic surface */
+.surface {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.012)),
+    rgba(16, 8, 13, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.surface-solid {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015)),
+    #120a0f;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.accent-tint {
+  background: color-mix(in srgb, var(--alt-accent) 12%, transparent);
+  border-color: color-mix(in srgb, var(--alt-accent) 45%, transparent);
+}
+.hairline {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.thin-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
+}
+
+/* ---------- Keyframes ---------- */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes dot-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(0.8);
+  }
+}
+@keyframes floaty {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -6px, 0);
+  }
+}
+@keyframes orb-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+@keyframes rs-wipe {
+  0% {
+    clip-path: circle(0% at 50% 50%);
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  46% {
+    clip-path: circle(80% at 50% 50%);
+    opacity: 1;
+  }
+  58% {
+    clip-path: circle(120% at 50% 50%);
+    opacity: 1;
+  }
+  100% {
+    clip-path: circle(150% at 50% 50%);
+    opacity: 0;
+  }
+}
+@keyframes rs-fade {
+  0% {
+    opacity: 0;
+  }
+  45% {
+    opacity: 0.92;
+  }
+  60% {
+    opacity: 0.92;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes rs-title {
+  0%,
+  25% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+    letter-spacing: 0.02em;
+  }
+  48%,
+  72% {
+    opacity: 1;
+    transform: none;
+    letter-spacing: 0.06em;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-6px);
+    letter-spacing: 0.1em;
+  }
+}
+@keyframes rs-ring {
+  0% {
+    transform: translate(-50%, -50%) scale(0.2);
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2.6);
+    opacity: 0;
+  }
+}
+@keyframes caret {
+  50% {
+    opacity: 0;
+  }
+}
+
+.anim-fade-up {
+  animation: fade-up var(--m-standard) var(--ease-out) both;
+}
+.anim-fade-in {
+  animation: fade-in var(--m-standard) var(--ease-soft) both;
+}
+
+/* Reduced motion: remove nonessential animation, keep short fades */
+html[data-reduced="true"] *,
+html[data-reduced="true"] *::before,
+html[data-reduced="true"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 120ms !important;
+  scroll-behavior: auto !important;
+}
+html[data-reduced="true"] .rs-fade-keep {
+  animation: rs-fade 360ms linear both !important;
+}
+
+input[type="range"] {
+  accent-color: var(--alt-accent);
+}
