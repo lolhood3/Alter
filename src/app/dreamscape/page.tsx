@@ -32,10 +32,13 @@ export default function DreamscapePage() {
   );
 
   useEffect(() => {
-    setLine(0);
-    if (reduced) return;
-    const t = window.setInterval(() => setLine((l) => l + 1), 14000);
-    return () => window.clearInterval(t);
+    const reset = window.setTimeout(() => setLine(0), 0);
+    if (reduced) return () => window.clearTimeout(reset);
+    const interval = window.setInterval(() => setLine((l) => l + 1), 14000);
+    return () => {
+      window.clearTimeout(reset);
+      window.clearInterval(interval);
+    };
   }, [shown, reduced]);
 
   const m = MODES[shown];

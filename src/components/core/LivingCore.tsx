@@ -123,8 +123,8 @@ export function LivingCore({
     try {
       renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: "high-performance" });
     } catch {
-      setFailed(true);
-      return;
+      const fallbackTimer = window.setTimeout(() => setFailed(true), 0);
+      return () => window.clearTimeout(fallbackTimer);
     }
     renderer.setClearColor(0x000000, 0);
 

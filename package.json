@@ -6,13 +6,16 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test src/app/api/health/route.test.ts src/components/ui/ui.test.tsx src/lib/flows.test.ts"
   },
   "dependencies": {
+    "@fontsource-variable/cormorant-garamond": "^5.3.0",
+    "@fontsource-variable/manrope": "^5.3.0",
     "@types/three": "^0.187.0",
     "dotenv": "17.3.1",
     "drizzle-orm": "0.45.2",
-    "next": "16.2.6",
+    "next": "^16.4.6",
     "pg": "8.20.0",
     "react": "19.2.6",
     "react-dom": "19.2.6",
@@ -21,15 +24,20 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.1.17",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.9",
+    "@types/jsdom": "^30.0.0",
     "@types/node": "22.19.15",
     "@types/pg": "8.18.0",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "drizzle-kit": "0.31.10",
     "eslint": "9.39.4",
-    "eslint-config-next": "16.2.6",
-    "postcss": "8.5.8",
+    "eslint-config-next": "^16.4.6",
+    "jsdom": "^31.0.0",
+    "postcss": "8.5.32",
     "tailwindcss": "4.1.17",
+    "tsx": "^4.23.15",
     "typescript": "5.9.3"
   }
 }

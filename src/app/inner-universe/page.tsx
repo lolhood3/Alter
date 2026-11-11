@@ -29,7 +29,10 @@ export default function InnerUniversePage() {
   const [selected, setSelected] = useState<ModeId | null>(null);
   const sel: ModeId = selected ?? currentMode;
   const [now, setNow] = useState<number | null>(null);
-  useEffect(() => setNow(Date.now()), []);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setNow(Date.now()), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
   useEffect(() => () => setPreview(null), [setPreview]);
 
   const data = useMemo(() => {
