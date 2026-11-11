@@ -1,24 +1,35 @@
-import { drizzle } from "drizzle-orm/node-postgres";
+import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 
-const databaseUrl = process.env.DATABASE_URL;
-
-if (!databaseUrl) {
-  throw new Error("DATABASE_URL is required");
+interface DatabaseConnection {
+  url: string;
+  pool: Pool;
+  db: NodePgDatabase;
 }
 
 const globalForDb = globalThis as typeof globalThis & {
-  __arenaNextJsPostgresqlPool?: Pool;
+  __alterDatabaseConnection?: DatabaseConnection;
 };
 
-export const pool =
-  globalForDb.__arenaNextJsPostgresqlPool ??
-  new Pool({
-    connectionString: databaseUrl,
+/**
+ * Returns the optional PostgreSQL connection without doing work at module load.
+ *
+ * ALTER's MVP persists product data in the browser. Database-backed features can
+ * call this when they run and handle `null` when DATABASE_URL is not configured.
+ */
+export function getDb(): NodePgDatabase | null {
+  const url = process.env.DATABASE_URL?.trim();
+  if (!url) return null;
+
+  const cached = globalForDb.__alterDatabaseConnection;
+  if (cached?.url === url) return cached.db;
+
+  const pool = new Pool({
+    connectionString: url,
+    // Keep health checks bounded when a configured database is unreachable.
+    connectionTimeoutMillis: 5_000,
   });
-
-if (process.env.NODE_ENV !== "production") {
-  globalForDb.__arenaNextJsPostgresqlPool = pool;
+  const db = drizzle(pool);
+  globalForDb.__alterDatabaseConnection = { url, pool, db };
+  return db;
 }
-
-export const db = drizzle(pool);

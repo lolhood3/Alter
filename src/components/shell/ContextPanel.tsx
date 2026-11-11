@@ -54,9 +54,12 @@ export function ContextPanel({ className }: { className?: string }) {
   const events = useAlter((s) => s.events);
   const [now, setNow] = useState<number | null>(null);
   useEffect(() => {
-    setNow(Date.now());
-    const t = window.setInterval(() => setNow(Date.now()), 30000);
-    return () => window.clearInterval(t);
+    const initial = window.setTimeout(() => setNow(Date.now()), 0);
+    const interval = window.setInterval(() => setNow(Date.now()), 30000);
+    return () => {
+      window.clearTimeout(initial);
+      window.clearInterval(interval);
+    };
   }, []);
 
   const lastCheckin = events.find((e) => e.type === "checkin");

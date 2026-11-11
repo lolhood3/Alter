@@ -21,7 +21,10 @@ export default function LivingCorePage() {
   const openDialog = useAlter((s) => s.openDialog);
   const proposal = useAlter((s) => s.proposal);
   const [greeting, setGreeting] = useState("");
-  useEffect(() => setGreeting(greetingFor(new Date())), []);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setGreeting(greetingFor(new Date())), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   return (
     <div className="mx-auto flex min-h-full w-full max-w-[1000px] flex-col px-4 pb-5 pt-5 sm:px-8 lg:pt-7">
