@@ -138,9 +138,11 @@ function Particles({ modeId, reduced }: { modeId: ModeId; reduced: boolean }) {
       h = window.innerHeight;
       canvas.width = w;
       canvas.height = h;
+      if (reduced) {
+        fade = 1;
+        draw();
+      }
     };
-    resize();
-    window.addEventListener("resize", resize);
 
     const draw = () => {
       ctx.clearRect(0, 0, w, h);
@@ -207,6 +209,9 @@ function Particles({ modeId, reduced }: { modeId: ModeId; reduced: boolean }) {
       ctx.globalAlpha = 1;
     };
 
+    resize();
+    window.addEventListener("resize", resize);
+
     const step = (dt: number) => {
       t += dt;
       for (const p of ps) {
@@ -259,10 +264,7 @@ function Particles({ modeId, reduced }: { modeId: ModeId; reduced: boolean }) {
       draw();
     };
 
-    if (reduced) {
-      fade = 1;
-      draw(); // a single still frame
-    } else {
+    if (!reduced) {
       raf = requestAnimationFrame(loop);
     }
     return () => {

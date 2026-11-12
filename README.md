@@ -28,7 +28,7 @@ npm test
 npm run build
 ```
 
-The tests cover the optional-database health contract, modal keyboard/focus behavior, and the fixed MATCH/SHIFT configuration logic.
+The tests cover the optional-database health contract, modal and radio-group keyboard behavior, fixed MATCH/SHIFT configuration logic, persisted-state repair, unavailable storage, and reset timer cancellation.
 
 ## Health and optional PostgreSQL
 

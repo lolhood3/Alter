@@ -283,7 +283,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           {/* Compact header (below xl) */}
           <header className={cx("flex h-14 shrink-0 items-center justify-between gap-3 px-4 min-[1280px]:hidden", fade)} inert={hidden}>
             <div className="lg:invisible">
-              <Logo />
+              <span className="sm:hidden"><Logo compact /></span>
+              <span className="hidden sm:block"><Logo /></span>
             </div>
             <StatePill state={state} className="!px-3 !py-1 !text-[10.5px]" />
             <ToolButtons showContext />

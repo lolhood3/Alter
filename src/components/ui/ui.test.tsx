@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { after, test } from "node:test";
 import { JSDOM } from "jsdom";
 import { useState } from "react";
-import { Modal } from "./ui";
+import { Modal, Segmented } from "./ui";
 
 const dom = new JSDOM("<!doctype html><html><body></body></html>", { url: "http://localhost" });
 const globalForDom = globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean };
@@ -14,6 +14,7 @@ for (const [key, value] of Object.entries({
   Object.defineProperty(globalThis, key, { configurable: true, writable: true, value });
 }
 globalForDom.IS_REACT_ACT_ENVIRONMENT = true;
+after(() => dom.window.close());
 Object.assign(globalThis, {
   HTMLElement: dom.window.HTMLElement,
   Node: dom.window.Node,
@@ -33,10 +34,7 @@ function ModalHarness() {
 test("modal keeps input focus across renders and closes with the latest callback", async (t) => {
   const { cleanup, render, screen } = await import("@testing-library/react");
   const userEvent = (await import("@testing-library/user-event")).default;
-  t.after(() => {
-    cleanup();
-    dom.window.close();
-  });
+  t.after(() => cleanup());
   const user = userEvent.setup();
   render(<ModalHarness />);
   const input = screen.getByLabelText<HTMLInputElement>("Message");
@@ -47,4 +45,41 @@ test("modal keeps input focus across renders and closes with the latest callback
 
   await user.keyboard("{Escape}");
   assert.equal(screen.queryByRole("dialog"), null);
+});
+
+function SegmentedHarness() {
+  const [value, setValue] = useState("reduced");
+  return (
+    <Segmented
+      label="Transition style"
+      value={value}
+      options={[{ value: "reduced", label: "Reduced" }, { value: "standard", label: "Standard" }, { value: "immersive", label: "Immersive" }]}
+      onChange={setValue}
+    />
+  );
+}
+
+test("segmented radio groups support roving focus and arrow, Home and End keys", async (t) => {
+  const { cleanup, render, screen } = await import("@testing-library/react");
+  const userEvent = (await import("@testing-library/user-event")).default;
+  t.after(() => cleanup());
+  const user = userEvent.setup();
+  render(<SegmentedHarness />);
+  const reduced = screen.getByRole<HTMLButtonElement>("radio", { name: "Reduced" });
+  reduced.focus();
+
+  await user.keyboard("{ArrowRight}");
+  const standard = screen.getByRole<HTMLButtonElement>("radio", { name: "Standard" });
+  assert.equal(standard.getAttribute("aria-checked"), "true");
+  assert.equal(document.activeElement, standard);
+  assert.equal(reduced.tabIndex, -1);
+
+  await user.keyboard("{End}");
+  const immersive = screen.getByRole<HTMLButtonElement>("radio", { name: "Immersive" });
+  assert.equal(immersive.getAttribute("aria-checked"), "true");
+  assert.equal(document.activeElement, immersive);
+
+  await user.keyboard("{Home}");
+  assert.equal(reduced.getAttribute("aria-checked"), "true");
+  assert.equal(document.activeElement, reduced);
 });

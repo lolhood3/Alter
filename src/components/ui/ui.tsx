@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type ButtonHTMLAttributes, type ReactNode } from "react";
+import { useEffect, useRef, type ButtonHTMLAttributes, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import { CORE_STATES, type CoreStateId } from "@/lib/coreStates";
 import { Icon } from "./Icon";
 
@@ -109,14 +109,28 @@ export function Segmented<T extends string>({
   onChange: (v: T) => void;
   label: string;
 }) {
+  const selected = Math.max(0, options.findIndex((option) => option.value === value));
+  const onKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    let next = selected;
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") next = (selected + 1) % options.length;
+    else if (event.key === "ArrowLeft" || event.key === "ArrowUp") next = (selected - 1 + options.length) % options.length;
+    else if (event.key === "Home") next = 0;
+    else if (event.key === "End") next = options.length - 1;
+    else return;
+    event.preventDefault();
+    onChange(options[next].value);
+    event.currentTarget.querySelectorAll<HTMLButtonElement>("[role=radio]")[next]?.focus();
+  };
+
   return (
-    <div role="radiogroup" aria-label={label} className="inline-flex rounded-full border border-white/10 bg-white/[0.03] p-1">
-      {options.map((o) => (
+    <div role="radiogroup" aria-label={label} onKeyDown={onKeyDown} className="inline-flex rounded-full border border-white/10 bg-white/[0.03] p-1">
+      {options.map((o, index) => (
         <button
           key={o.value}
           type="button"
           role="radio"
           aria-checked={value === o.value}
+          tabIndex={index === selected ? 0 : -1}
           onClick={() => onChange(o.value)}
           className={cx(
             "min-h-9 rounded-full px-3.5 text-[12px] font-medium tracking-wide transition-colors duration-[var(--m-snappy)]",

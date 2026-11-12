@@ -7,7 +7,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test src/app/api/health/route.test.ts src/components/ui/ui.test.tsx src/lib/flows.test.ts"
+    "test": "tsx --test src/app/api/health/route.test.ts src/components/environment/Environment.test.tsx src/components/ui/ui.test.tsx src/lib/flows.test.ts src/lib/store.test.ts"
   },
   "dependencies": {
     "@fontsource-variable/cormorant-garamond": "^5.3.0",
