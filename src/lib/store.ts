@@ -5,7 +5,7 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import { MODES, type ModeId } from "./modes";
 import type { CoreStateId } from "./coreStates";
 import { defaultEnvironment, type Environment } from "./flows";
-import { newId } from "./util";
+import { clamp, newId } from "./util";
 
 /* ------------------------------ Types ------------------------------ */
 
@@ -146,6 +146,145 @@ export function isReduced(s: Pick<AlterState, "settings" | "systemReduced">) {
 }
 
 const MAX_EVENTS = 500;
+const ENV_SOURCES = new Set(["manual", "match", "shift", "restore", "recent"]);
+const ECHO_TYPES = new Set(["environment", "shift", "checkin", "direction", "message"]);
+const TRANSITION_STYLES = new Set(["reduced", "standard", "immersive"]);
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isModeId(value: unknown): value is ModeId {
+  return typeof value === "string" && Object.prototype.hasOwnProperty.call(MODES, value);
+}
+
+function finiteNumber(value: unknown, fallback: number, min: number, max: number): number {
+  return typeof value === "number" && Number.isFinite(value) ? clamp(value, min, max) : fallback;
+}
+
+function booleanValue(value: unknown, fallback: boolean): boolean {
+  return typeof value === "boolean" ? value : fallback;
+}
+
+function sanitizeEnvironment(value: unknown, modeId: ModeId): Environment | null {
+  if (!isRecord(value) || value.modeId !== modeId) return null;
+  if (
+    typeof value.id !== "string" ||
+    typeof value.name !== "string" ||
+    typeof value.summary !== "string" ||
+    typeof value.source !== "string" ||
+    !ENV_SOURCES.has(value.source)
+  ) {
+    return null;
+  }
+  return {
+    id: value.id,
+    name: value.name,
+    modeId,
+    summary: value.summary,
+    motionScale: finiteNumber(value.motionScale, 1, 0, 2),
+    source: value.source as Environment["source"],
+  };
+}
+
+function sanitizeEvent(value: unknown): EchoEvent | null {
+  if (!isRecord(value)) return null;
+  if (
+    typeof value.id !== "string" ||
+    typeof value.ts !== "number" ||
+    !Number.isFinite(value.ts) ||
+    Math.abs(value.ts) > 8.64e15 ||
+    typeof value.type !== "string" ||
+    !ECHO_TYPES.has(value.type) ||
+    typeof value.title !== "string" ||
+    !isModeId(value.modeId)
+  ) {
+    return null;
+  }
+
+  const event: EchoEvent = {
+    id: value.id,
+    ts: value.ts,
+    type: value.type as EchoType,
+    title: value.title,
+    modeId: value.modeId,
+  };
+  if (typeof value.detail === "string") event.detail = value.detail;
+  if (isModeId(value.fromModeId)) event.fromModeId = value.fromModeId;
+  if (isRecord(value.meta)) {
+    const entries = Object.entries(value.meta).filter((entry): entry is [string, string] => typeof entry[1] === "string");
+    if (entries.length) event.meta = Object.fromEntries(entries);
+  }
+  return event;
+}
+
+type PersistedCoreState = Pick<AlterState, "modeId" | "env" | "settings" | "events">;
+
+/** Treat localStorage as untrusted input: retain valid data and fall back field by field. */
+export function sanitizePersistedState(persisted: unknown, current: PersistedCoreState): PersistedCoreState {
+  const p = isRecord(persisted) ? persisted : {};
+  const modeId = isModeId(p.modeId) ? p.modeId : current.modeId;
+  const settings = isRecord(p.settings) ? p.settings : {};
+  const events: EchoEvent[] = [];
+  const ids = new Set<string>();
+  if (Array.isArray(p.events)) {
+    for (const value of p.events.slice(0, MAX_EVENTS)) {
+      const event = sanitizeEvent(value);
+      if (!event || ids.has(event.id)) continue;
+      ids.add(event.id);
+      events.push(event);
+    }
+  }
+
+  return {
+    modeId,
+    env: sanitizeEnvironment(p.env, modeId) ?? defaultEnvironment(modeId),
+    settings: {
+      reducedMotion: settings.reducedMotion === null || typeof settings.reducedMotion === "boolean"
+        ? settings.reducedMotion
+        : DEFAULT_SETTINGS.reducedMotion,
+      coreIntensity: finiteNumber(settings.coreIntensity, DEFAULT_SETTINGS.coreIntensity, 0, 100),
+      particleIntensity: finiteNumber(settings.particleIntensity, DEFAULT_SETTINGS.particleIntensity, 0, 100),
+      ambientSound: booleanValue(settings.ambientSound, DEFAULT_SETTINGS.ambientSound),
+      compactComm: booleanValue(settings.compactComm, DEFAULT_SETTINGS.compactComm),
+      transitionStyle: typeof settings.transitionStyle === "string" && TRANSITION_STYLES.has(settings.transitionStyle)
+        ? settings.transitionStyle as TransitionStyle
+        : DEFAULT_SETTINGS.transitionStyle,
+      recordEchoes: booleanValue(settings.recordEchoes, DEFAULT_SETTINGS.recordEchoes),
+    },
+    events,
+  };
+}
+
+/** Storage denial/quota errors leave the in-memory experience usable for the session. */
+export function createSafeJSONStorage(getStorage: () => Storage) {
+  return createJSONStorage(() => {
+    const storage = getStorage();
+    return {
+      getItem: (name: string) => {
+        try {
+          return storage.getItem(name);
+        } catch {
+          return null;
+        }
+      },
+      setItem: (name: string, value: string) => {
+        try {
+          storage.setItem(name, value);
+        } catch {
+          // The app remains functional without durable persistence.
+        }
+      },
+      removeItem: (name: string) => {
+        try {
+          storage.removeItem(name);
+        } catch {
+          // The app remains functional without durable persistence.
+        }
+      },
+    };
+  });
+}
 
 /* ------------------------------ Store ------------------------------ */
 
@@ -317,6 +456,8 @@ export const useAlter = create<AlterState>()(
         resetPreferences: () => set({ settings: { ...DEFAULT_SETTINGS } }),
         resetDemo: () => {
           clearShiftTimers();
+          window.clearTimeout(replyTimer);
+          window.clearTimeout(settleTimer);
           set({
             modeId: "peter-parker",
             env: defaultEnvironment("peter-parker"),
@@ -339,20 +480,10 @@ export const useAlter = create<AlterState>()(
     {
       name: "alter.v1",
       version: 1,
-      storage: createJSONStorage(() => localStorage),
+      storage: createSafeJSONStorage(() => localStorage),
       skipHydration: true,
       partialize: (s) => ({ modeId: s.modeId, env: s.env, settings: s.settings, events: s.events }),
-      merge: (persisted, current) => {
-        const p = (persisted ?? {}) as Partial<AlterState>;
-        const modeId = p.modeId && MODES[p.modeId] ? p.modeId : current.modeId;
-        return {
-          ...current,
-          modeId,
-          env: p.env && MODES[p.env.modeId] ? p.env : defaultEnvironment(modeId),
-          settings: { ...DEFAULT_SETTINGS, ...(p.settings ?? {}) },
-          events: Array.isArray(p.events) ? p.events.filter((e) => e && MODES[e.modeId]) : [],
-        };
-      },
+      merge: (persisted, current) => ({ ...current, ...sanitizePersistedState(persisted, current) }),
     },
   ),
 );

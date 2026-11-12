@@ -39,12 +39,32 @@ export default function EchoesPage() {
       </PageHeader>
 
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div role="tablist" aria-label="Filter echoes" className="no-scrollbar -mx-1 flex gap-1 overflow-x-auto px-1">
+        <div
+          role="tablist"
+          aria-label="Filter echoes"
+          aria-orientation="horizontal"
+          onKeyDown={(event) => {
+            const current = ECHO_FILTERS.findIndex((item) => item.id === filter);
+            let next = current;
+            if (event.key === "ArrowRight") next = (current + 1) % ECHO_FILTERS.length;
+            else if (event.key === "ArrowLeft") next = (current - 1 + ECHO_FILTERS.length) % ECHO_FILTERS.length;
+            else if (event.key === "Home") next = 0;
+            else if (event.key === "End") next = ECHO_FILTERS.length - 1;
+            else return;
+            event.preventDefault();
+            setFilter(ECHO_FILTERS[next].id);
+            event.currentTarget.querySelectorAll<HTMLButtonElement>("[role=tab]")[next]?.focus();
+          }}
+          className="no-scrollbar -mx-1 flex gap-1 overflow-x-auto px-1"
+        >
           {ECHO_FILTERS.map((f) => (
             <button
               key={f.id}
+              id={`echo-tab-${f.id}`}
               role="tab"
               aria-selected={filter === f.id}
+              aria-controls="echo-results"
+              tabIndex={filter === f.id ? 0 : -1}
               onClick={() => setFilter(f.id)}
               className={cx(
                 "min-h-11 shrink-0 rounded-full border px-4 text-[13px] transition-colors",
@@ -83,8 +103,9 @@ export default function EchoesPage() {
         <p className="surface mb-5 rounded-2xl px-5 py-3 text-[13px] text-ink/60">Recording is turned off in Settings. New activity won’t be saved.</p>
       )}
 
-      {!hydrated ? null : shown.length === 0 ? (
-        <div className="surface rounded-3xl p-10 text-center">
+      <div id="echo-results" role="tabpanel" aria-labelledby={`echo-tab-${filter}`}>
+        {!hydrated ? null : shown.length === 0 ? (
+          <div className="surface rounded-3xl p-10 text-center">
           <p className="font-display text-[28px] text-ink/85 italic">{events.length === 0 ? "Nothing recorded yet." : "Nothing in this filter."}</p>
           <p className="mx-auto mt-2 max-w-sm text-[13px] leading-relaxed text-ink/45">
             Enter a mode, try MATCH or SHIFT, and the moments you choose will appear here.
@@ -134,6 +155,7 @@ export default function EchoesPage() {
           ))}
         </div>
       )}
+      </div>
     </Page>
   );
 }
